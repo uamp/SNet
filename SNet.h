@@ -3,19 +3,30 @@
 #ifndef __SNET_H_INCLUDED__
 #define __SNET_H_INCLUDED__
 
-// NB these includes need to be in the main body of the arduino program as the library sub directorys are only included by the arduino IDE if they are in the main body of the program
-#include "Arduino.h"
+//#include <SNetConfig.h>
+
+// these includes need to be in the main body of the arduino program as the library sub directorys are only included by the arduino IDE if they are in the main body of the program
+#include <Arduino.h>
 #include <SPI.h>
-#include <RF24.h>
-#include <RF24Network.h>
+#ifdef USE_NRF24
+	#include <RF24.h>
+#endif
+#include <RF24Network.h> //included for the header definition
+#ifdef USE_RFM69
+	#include <RFM69.h>         //get it here: https://www.github.com/lowpowerlab/rfm69
+	#include <RFM69_ATC.h>     //get it here: https://github.com/lowpowerlab/RFM69
+#endif
 #include <EEPROM.h>
 
 //class RF24;
 //class RF24Network;
 
-#define SNET_VERSION "v2.3"  
-//v2.2 same as 2.1 but now includes updated RF24 and RF24Network libraries. 
+#define SNET_VERSION "v3.0"
+//v2.2 same as 2.1 but now includes updated RF24 and RF24Network libraries.
 //v2.3 includes auto wake function after radio has been put to sleep
+//v3.0 includes RFM69 compatibility - still needs testing!!
+
+#define SNET_MESSAGE_TYPE_OFFSET 64  //to account for ack packets
 
 //sensor types:   nb there is no sensor 0 to avoid spurious commands
 #define SNET_NODEDETAILS 1     //details of the node: command2: 1-Node type, 2-Node version, 3-LEAF/NODE, 4-SnetV, 5-config
@@ -40,6 +51,7 @@
 #define SNET_CURRENT 71
 #define SNET_POWER 72
 #define SNET_ENERGY 73
+#define SNET_POSITION 80
 #define SNET_CAPACITY 90
 #define SNET_VOLUME 91
 #define SNET_FLOW 92
@@ -65,11 +77,11 @@ enum SNetEepromAddress {SNET_EEPROM_VERIFY=0,SNET_EEPROM_NODE_ADDRESS=1, SNET_EE
 struct payload_t
 {
 	uint16_t sensor_id;   //is normally used as from-sensor, unless coming from the bridge, in which case it is used as to-sensor
-	uint16_t command1; 
+	uint16_t command1;
 	uint16_t command2;
 	union {
-		float f;		
-		long l;		
+		float f;
+		long l;
 		byte b[4];  //uint8_t
 		char c[4];   //int8_t
 		//int16_t i[2];
@@ -79,22 +91,36 @@ struct payload_t
 
 class SNet {
 private:
-	RF24 radio;
-	RF24Network network;
+	#ifdef USE_NRF24
+		RF24 radio;
+		RF24Network network;
+	#endif
+	#ifdef USE_RFM69
+		#ifdef ENABLE_ATC
+		  RFM69_ATC radio;
+		#else
+		  RFM69 radio;
+		#endif
+		uint16_t _msg_count=0;  //RF24 this is taken care of automatically, but this has to be manually dealt with here
+	#endif
+
 	uint16_t node_address=1;  //default fall back
-	uint16_t sensor_id=100; 
+	uint16_t sensor_id=100;
 	uint16_t to_node=0;
 	bool sendGeneric(unsigned char type, uint16_t command1, uint16_t command2,  void * data); //internal use only - after type has been determined
 	void loadEeprom();
-	bool radio_asleep=false;	
+	bool radio_asleep=false;
+	bool write(RF24NetworkHeader header, payload_t payload_to_send);
 
 public:
-	SNet(uint8_t ce_pin, uint8_t csn_pin, uint16_t _node_address, uint16_t _sensor_id); //optional sensor id - can be set now if constant, or set at send time
-	SNet(uint8_t ce_pin, uint8_t csn_pin); //will load node_address and sensor_id from eeprom
+	SNet(uint8_t , uint8_t , uint16_t _node_address, uint16_t _sensor_id); //optional sensor id - can be set now if constant, or set at send time
+	SNet(uint8_t , uint8_t ); //will load node_address and sensor_id from eeprom
+				//CE , CSN for NRF24
+				//CE , IRQ for RFM69
 	~SNet();
 
 	payload_t payload; // payload - used as last received
-	RF24NetworkHeader header; //payload - used as last received 
+	RF24NetworkHeader header; //payload - used as last received
 
 	void setEeprom();
 
@@ -106,7 +132,7 @@ public:
 	bool sendFull(uint16_t _to_node, unsigned char type, payload_t payload_to_send);
 
 	//type bit pattern: LSB - always set. next two are data type, bit5 is command2 present
-	bool send(uint16_t command1, float data); //type 1	
+	bool send(uint16_t command1, float data); //type 1
 	bool send(uint16_t command1, long data);  //type 3
  	bool send(uint16_t command1, byte data[4]); //type 5
 	bool send(uint16_t command1, char data[4]); //type 7
@@ -122,17 +148,15 @@ public:
 	bool available;
 	void sleep();
 	void wake();
-	
+
 	void setNodeAddress(uint16_t _node_address);   //NB, this command needs to be followed by SNet.begin(); to take effect
 	uint16_t getNodeAddress();
 	void setSensorID(uint16_t _sensor_id);
 	uint16_t getSensorID();
 	void sendToNode(uint16_t _to_node);
-	const char* toString(void) const;	
+	const char* toString(void) const;
 
-};	
-
-
-#endif // __SNET_H_INCLUDED__ 
+};
 
 
+#endif // __SNET_H_INCLUDED__
