@@ -8,14 +8,28 @@
 // these includes need to be in the main body of the arduino program as the library sub directorys are only included by the arduino IDE if they are in the main body of the program
 #include <Arduino.h>
 #include <SPI.h>
+#include <SNetConfig.h>
+
 #ifdef USE_NRF24
 	#include <RF24.h>
+	#include <RF24Network.h> //included for the header definition
 #endif
-#include <RF24Network.h> //included for the header definition
+
 #ifdef USE_RFM69
 	#include <RFM69.h>         //get it here: https://www.github.com/lowpowerlab/rfm69
 	#include <RFM69_ATC.h>     //get it here: https://github.com/lowpowerlab/RFM69
+	struct RF24NetworkHeader
+	{
+	  uint16_t from_node; /**< Logical address where the message was generated */
+	  uint16_t to_node; /**< Logical address where the message is going */
+	  uint16_t id; /**< Sequential message ID, incremented every time a new frame is constructed */
+	  unsigned char type; /**< <b>Type of the packet. </b> 0-127 are user-defined types, 128-255 are reserved for system */
+	  unsigned char reserved; /**< *Reserved for system use* */
+		RF24NetworkHeader() {}
+		RF24NetworkHeader(uint16_t _to, unsigned char _type = 0): to_node(_to), type(_type) {}
+	};
 #endif
+
 #include <EEPROM.h>
 
 //class RF24;
@@ -104,13 +118,26 @@ private:
 		uint16_t _msg_count=0;  //RF24 this is taken care of automatically, but this has to be manually dealt with here
 	#endif
 
-	uint16_t node_address=1;  //default fall back
+	#ifdef USE_RFM69
+		uint16_t node_address=1;  //default fall back
+	#endif
+	#ifdef USE_NRF24
+		uint16_t node_address=0;
+	#endif
+
 	uint16_t sensor_id=100;
-	uint16_t to_node=0;
+
+	#ifdef USE_RFM69
+		uint16_t to_node=1;
+	#endif
+	#ifdef USE_NRF24
+		uint16_t to_node=0;
+	#endif
+
 	bool sendGeneric(unsigned char type, uint16_t command1, uint16_t command2,  void * data); //internal use only - after type has been determined
 	void loadEeprom();
 	bool radio_asleep=false;
-	bool write(RF24NetworkHeader header, payload_t payload_to_send);
+	bool write(RF24NetworkHeader * header_to_send, payload_t * payload_to_send);
 
 public:
 	SNet(uint8_t , uint8_t , uint16_t _node_address, uint16_t _sensor_id); //optional sensor id - can be set now if constant, or set at send time
@@ -120,7 +147,8 @@ public:
 	~SNet();
 
 	payload_t payload; // payload - used as last received
-	RF24NetworkHeader header; //payload - used as last received
+	RF24NetworkHeader header; //header - used as last received
+	int16_t rssi; //only available if using RFM. Zero if using NRF. Also found in recieved copy of header.to_node
 
 	void setEeprom();
 
@@ -129,7 +157,7 @@ public:
 	void update();
 	//bool sendAll();
 
-	bool sendFull(uint16_t _to_node, unsigned char type, payload_t payload_to_send);
+	bool sendFull(uint16_t _to_node, unsigned char type, payload_t * payload_to_send);
 
 	//type bit pattern: LSB - always set. next two are data type, bit5 is command2 present
 	bool send(uint16_t command1, float data); //type 1
