@@ -171,7 +171,7 @@ public:
 	bool send(uint16_t command1, uint16_t command2,  char data[4]); // type 23
 	//bool send(uint16_t command1, uint16_t command2,  int16_t data[2]); // type 25
 
-	bool sendDetails(char sensor_type[4],char version_number[4],bool is_leaf_node);
+	bool sendDetails(String sensor_type, String version_number,bool is_leaf_node);
 
 	bool available;
 	void sleep();

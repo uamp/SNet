@@ -199,21 +199,29 @@ void SNet::update(){
 
 }
 
-bool SNet::sendDetails(char sensor_type[4],char version_number[4],bool is_leaf_node){
+bool SNet::sendDetails(String sensor_type, String version_number,bool is_leaf_node){
 	this->wake();
-	/*
-	//this needs modifying as it doesn't work on ESP
-	bool ok= send(SNET_NODEDETAILS,1,sensor_type);
-	ok &=  send(SNET_NODEDETAILS,2,version_number);
+	
+	char * cstr=new char[4];
+	strcpy(cstr, sensor_type.c_str());
+	bool ok= send(SNET_NODEDETAILS,1,cstr);
+	strcpy(cstr, version_number.c_str());
+	ok &=  send(SNET_NODEDETAILS,2,cstr);
+
+  char leaf[]="LEAF";
+	char node[]="NODE";
+	char version[]=SNET_VERSION;
+
 	if(is_leaf_node) {
-		ok &=  send(SNET_NODEDETAILS,3,"LEAF");
+		ok &=  send(SNET_NODEDETAILS,3,leaf);
 	} else {
-		ok &=  send(SNET_NODEDETAILS,3,"NODE");
+		ok &=  send(SNET_NODEDETAILS,3,node);
 	}
-	ok &=  send(SNET_NODEDETAILS,4,SNET_VERSION);
+
+	ok &=  send(SNET_NODEDETAILS,4,version);
 	return ok;
-	*/
-	return true;
+
+	//return true;
 }
 
 
