@@ -182,7 +182,7 @@ public:
 	void setSensorID(uint16_t _sensor_id);
 	uint16_t getSensorID();
 	void sendToNode(uint16_t _to_node);
-	const char* toString(void) const;
+	const char* toString(void) const; //very memery intensive  - don't know why.  memory leak?  crashes TRV
 
 };
 

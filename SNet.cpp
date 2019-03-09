@@ -112,7 +112,7 @@ void SNet::update(){
 	#endif  //NRF24
 	#ifdef USE_RFM69
 		if(radio.receiveDone()){
-			//Serial.println("here1");
+
 			//if(radio.DATALEN==(sizeof(payload_t)+sizeof(RF24NetworkHeader))){
 
 				//memcpy(&header,&(char *)radio.DATA,sizeof(RF24NetworkHeader));
@@ -135,8 +135,13 @@ void SNet::update(){
 					rec_buffer[i]=temp_byte;
 				}
 				//Serial.println(" - end");
+				//think this is causing stack problems:
 				memcpy(&header,&rec_buffer,sizeof(RF24NetworkHeader));
 				memcpy(&payload,&rec_buffer[sizeof(RF24NetworkHeader)],sizeof(payload_t));
+
+				//new code at 9/3/19:
+				//theData = *(Payload*)radio.DATA; //assume radio.DATA actually contains our struct and not something else
+
 
 				header.to_node=radio.RSSI; //to_node "shouldn't" be needed once packet has successfully arrived at the correct destination
 																		//caveat to this is when promiscuous mode is on and it is sniffing all packets
@@ -201,7 +206,7 @@ void SNet::update(){
 
 bool SNet::sendDetails(String sensor_type, String version_number,bool is_leaf_node){
 	this->wake();
-	
+
 	char * cstr=new char[4];
 	strcpy(cstr, sensor_type.c_str());
 	bool ok= send(SNET_NODEDETAILS,1,cstr);
