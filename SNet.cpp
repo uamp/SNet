@@ -121,14 +121,14 @@ void SNet::update(){
 				//memcpy(&payload,&radio.DATA + sizeof(RF24NetworkHeader),sizeof(payload_t));
 				//memcpy cannot work as radio.DATA is volatile, and memcpy cannot work on a volatile obj
 				//(https://stackoverflow.com/questions/36729240/passing-argument-2-of-memcpy-discards-volatile-qualifier-from-pointer-target)
-				uint8_t temp_byte;
-				uint8_t rec_buffer[sizeof(RF24NetworkHeader)+sizeof(payload_t)];
+				//uint8_t temp_byte;
+				//uint8_t rec_buffer[sizeof(RF24NetworkHeader)+sizeof(payload_t)];
 				/*
 				Serial.print("Start [");
 				Serial.print(radio.DATALEN);
 				Serial.print("]");
 				*/
-				for (byte i = 0; i < radio.DATALEN; i++){
+				/*for (byte i = 0; i < (sizeof(RF24NetworkHeader)+sizeof(payload_t)); i++){ //changed from radio.DATALEN as believe this was causing overflow
 					temp_byte=radio.DATA[i];
 					//Serial.print(temp_byte);
 					//Serial.print(" ");
@@ -138,10 +138,17 @@ void SNet::update(){
 				//think this is causing stack problems:
 				memcpy(&header,&rec_buffer,sizeof(RF24NetworkHeader));
 				memcpy(&payload,&rec_buffer[sizeof(RF24NetworkHeader)],sizeof(payload_t));
-
+				*/
 				//new code at 9/3/19:
 				//theData = *(Payload*)radio.DATA; //assume radio.DATA actually contains our struct and not something else
-
+				char * cheader = (char *)&header;  //type cast pointer to header & payload to char pointers - which means they can be addressed using [i]
+				char * cpayload = (char *)&payload;  //this should save quite a bit of memory and hopefully any overflows.
+				for (byte i = 0; i < sizeof(RF24NetworkHeader); i++){
+					cheader[i]=radio.DATA[i];
+				}
+				for (byte i = 0; i < sizeof(payload_t); i++){
+					cpayload[i]=radio.DATA[i+sizeof(RF24NetworkHeader)];
+				}
 
 				header.to_node=radio.RSSI; //to_node "shouldn't" be needed once packet has successfully arrived at the correct destination
 																		//caveat to this is when promiscuous mode is on and it is sniffing all packets
@@ -213,8 +220,8 @@ bool SNet::sendDetails(String sensor_type, String version_number,bool is_leaf_no
 	strcpy(cstr, version_number.c_str());
 	ok &=  send(SNET_NODEDETAILS,2,cstr);
 
-  char leaf[]="LEAF";
 	char node[]="NODE";
+	char leaf[]="LEAF";
 	char version[]=SNET_VERSION;
 
 	if(is_leaf_node) {
