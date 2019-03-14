@@ -35,10 +35,11 @@
 //class RF24;
 //class RF24Network;
 
-#define SNET_VERSION "v3.0"
+#define SNET_VERSION "v3.1"
 //v2.2 same as 2.1 but now includes updated RF24 and RF24Network libraries.
 //v2.3 includes auto wake function after radio has been put to sleep
 //v3.0 includes RFM69 compatibility - still needs testing!!
+//v3.1 fixed memory leak in RFM69 code
 
 #define SNET_MESSAGE_TYPE_OFFSET 64  //to account for ack packets
 
@@ -77,6 +78,7 @@
 #define SNET_MILIGHT 115
 #define SNET_TIME 130
 #define SNET_TIMEREMAINING 131
+#define SNET_INTERVAL 132
 #define SNET_DIGITAL 140
 #define SNET_ANALOGUE 141
 #define SNET_COUNT 150

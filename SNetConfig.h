@@ -6,6 +6,7 @@
 
 #define SERIAL_BAUD   115200
 #define NETWORK_ADDRESS 90
+//#define SNET_WRITEPROTECT
 
 //RFM SETUP   *******************************************************************************************************************
 #ifdef USE_RFM69
