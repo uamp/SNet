@@ -35,11 +35,12 @@
 //class RF24;
 //class RF24Network;
 
-#define SNET_VERSION "v3.1"
+#define SNET_VERSION "v3.2"
 //v2.2 same as 2.1 but now includes updated RF24 and RF24Network libraries.
 //v2.3 includes auto wake function after radio has been put to sleep
 //v3.0 includes RFM69 compatibility - still needs testing!!
 //v3.1 fixed memory leak in RFM69 code
+//v3.2 RFM/NRF define now done in user space
 
 #define SNET_MESSAGE_TYPE_OFFSET 64  //to account for ack packets
 
@@ -121,10 +122,10 @@ private:
 	#endif
 
 	#ifdef USE_RFM69
-		uint16_t node_address=1;  //default fall back
+		uint16_t node_address=2;  //default fall back
 	#endif
 	#ifdef USE_NRF24
-		uint16_t node_address=0;
+		uint16_t node_address=1;
 	#endif
 
 	uint16_t sensor_id=100;

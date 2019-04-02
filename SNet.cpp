@@ -240,7 +240,7 @@ bool SNet::sendDetails(String sensor_type, String version_number,bool is_leaf_no
 bool SNet::write(RF24NetworkHeader * header_to_send, payload_t * payload_to_send){
 	//this->wake();
 	#ifdef USE_NRF24
-		bool ok = network.write(header_to_send,&payload_to_send,sizeof(payload_t));
+		bool ok = network.write(*header_to_send, static_cast<void*>(payload_to_send),sizeof(payload_t));
 	#endif
 	#ifdef USE_RFM69
 		//uint8_t buffer[RF69_MAX_DATA_LEN];
